@@ -1,0 +1,28 @@
+stereo_vision_system/
+├── main.py                    # Entry point with CLI interface
+├── config/
+│   ├── __init__.py
+│   ├── settings.py           # System configuration & parameters
+│   └── camera_config.json    # Camera calibration data
+├── core/
+│   ├── __init__.py
+│   ├── camera_manager.py     # ESP32-CAM stream handling
+│   ├── stereo_processor.py   # Stereo vision & depth calculation
+│   ├── detector_engine.py    # AI detection (MediaPipe + YOLOv8)
+│   └── tracker_system.py     # Object tracking & ID management
+├── visualization/
+│   ├── __init__.py
+│   ├── hud_overlay.py        # Futuristic HUD rendering
+│   ├── radar_mapper.py       # 2D radar visualization
+│   └── point_cloud.py        # 3D visualization with Open3D
+├── audio/
+│   ├── __init__.py
+│   └── tts_engine.py         # Text-to-speech feedback
+├── gui/
+│   ├── __init__.py
+│   └── control_panel.py      # PyQt6 control interface
+├── utils/
+│   ├── __init__.py
+│   ├── performance.py        # Threading & optimization
+│   └── logger.py             # Logging system
+└── requirements.txt

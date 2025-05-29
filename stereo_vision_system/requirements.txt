@@ -1,0 +1,44 @@
+# Core Computer Vision
+opencv-python==4.8.1.78
+opencv-contrib-python==4.8.1.78
+numpy==1.24.3
+scipy==1.11.1
+
+# AI/ML Libraries
+mediapipe==0.10.3
+ultralytics==8.0.196
+torch==2.0.1
+torchvision==0.15.2
+torchaudio==0.13.1
+tensorrt==8.6.1
+onnxruntime-gpu==1.15.1
+
+# 3D Visualization
+open3d==0.17.0
+matplotlib==3.7.2
+plotly==5.15.0
+
+# GUI Framework
+PyQt6==6.5.2
+PyQt6-tools==6.4.2.3.3
+
+# Audio
+pyttsx3==2.90
+sounddevice==0.4.6
+pygame==2.5.0
+
+# Utilities
+imutils==0.5.4
+Pillow==10.0.0
+requests==2.31.0
+python-dotenv==1.0.0
+pydantic==2.1.1
+loguru==0.7.0
+
+# Performance
+psutil==5.9.5
+numba==0.57.1
+
+# Optional ML acceleration
+onnx==1.14.0
+openvino==2023.0.1
