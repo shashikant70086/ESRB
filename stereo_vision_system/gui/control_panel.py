@@ -288,4 +288,202 @@ class ControlPanelGUI(QMainWindow):
         
         button_layout = QHBoxLayout()
         
-        self.calibrate
+        self.calibrate_button = QPushButton("Start Calibration")
+        self.calibrate_button.clicked.connect(self.calibrate_cameras.emit)
+        button_layout.addWidget(self.calibrate_button)
+        
+        self.load_calib_button = QPushButton("Load Calibration")
+        self.load_calib_button.clicked.connect(self.load_calibration)
+        button_layout.addWidget(self.load_calib_button)
+        
+        self.save_calib_button = QPushButton("Save Calibration")
+        self.save_calib_button.clicked.connect(self.save_calibration)
+        button_layout.addWidget(self.save_calib_button)
+        
+        calib_layout.addLayout(button_layout)
+        
+        # Calibration status
+        self.calib_status = QLabel("No calibration loaded")
+        self.calib_status.setStyleSheet("color: orange;")
+        calib_layout.addWidget(self.calib_status)
+        
+        layout.addWidget(calib_group)
+        
+        # Manual parameters
+        manual_group = QGroupBox("Manual Parameters")
+        manual_layout = QGridLayout(manual_group)
+        
+        manual_layout.addWidget(QLabel("Focal Length (px):"), 0, 0)
+        self.focal_length = QDoubleSpinBox()
+        self.focal_length.setRange(100.0, 2000.0)
+        self.focal_length.setValue(500.0)
+        manual_layout.addWidget(self.focal_length, 0, 1)
+        
+        manual_layout.addWidget(QLabel("Principal Point X:"), 1, 0)
+        self.cx = QDoubleSpinBox()
+        self.cx.setRange(0.0, 1000.0)
+        self.cx.setValue(320.0)
+        manual_layout.addWidget(self.cx, 1, 1)
+        
+        manual_layout.addWidget(QLabel("Principal Point Y:"), 2, 0)
+        self.cy = QDoubleSpinBox()
+        self.cy.setRange(0.0, 1000.0)
+        self.cy.setValue(240.0)
+        manual_layout.addWidget(self.cy, 2, 1)
+        
+        layout.addWidget(manual_group)
+        layout.addStretch()
+        
+        self.tabs.addTab(calib_widget, "Calibration")
+    
+    def setup_timer(self):
+        """Setup timer for periodic updates"""
+        self.update_timer = QTimer()
+        self.update_timer.timeout.connect(self.update_display)
+        self.update_timer.start(100)  # Update every 100ms
+    
+    def toggle_system(self):
+        """Toggle system start/stop"""
+        if not self.system_running:
+            # Start system
+            settings = self.get_current_settings()
+            self.settings_changed.emit(settings)
+            self.start_system.emit()
+            self.start_button.setText("Stop System")
+            self.system_running = True
+            self.statusBar().showMessage("System Running")
+        else:
+            # Stop system
+            self.stop_system.emit()
+            self.start_button.setText("Start System")
+            self.system_running = False
+            self.statusBar().showMessage("System Stopped")
+    
+    def get_current_settings(self) -> Dict[str, Any]:
+        """Get current settings from UI"""
+        return {
+            'camera': {
+                'left_url': self.left_url_input.toPlainText().strip(),
+                'right_url': self.right_url_input.toPlainText().strip(),
+                'baseline': self.baseline_input.value(),
+                'left_rotation': self.left_rotation.currentText(),
+                'right_rotation': self.right_rotation.currentText(),
+            },
+            'detection': {
+                'model': self.model_combo.currentText(),
+                'confidence': self.confidence_slider.value() / 100.0,
+                'max_distance': self.max_distance.value(),
+            },
+            'audio': {
+                'enabled': self.audio_enabled.isChecked(),
+                'alert_distance': self.alert_distance.value(),
+            },
+            'visualization': {
+                'show_hud': self.show_hud.isChecked(),
+                'show_distances': self.show_distances.isChecked(),
+                'show_fps': self.show_fps.isChecked(),
+                'show_scan_lines': self.show_scan_lines.isChecked(),
+                'show_radar': self.show_radar.isChecked(),
+                'show_point_cloud': self.show_point_cloud.isChecked(),
+                'show_disparity': self.show_disparity.isChecked(),
+            },
+            'performance': {
+                'target_fps': self.target_fps.value(),
+                'use_gpu': self.use_gpu.isChecked(),
+                'adaptive_fps': self.adaptive_fps.isChecked(),
+            },
+            'calibration': {
+                'focal_length': self.focal_length.value(),
+                'cx': self.cx.value(),
+                'cy': self.cy.value(),
+            }
+        }
+    
+    @pyqtSlot(dict)
+    def update_stats(self, stats: Dict[str, Any]):
+        """Update performance statistics"""
+        self.current_stats = stats
+    
+    def update_display(self):
+        """Update display elements"""
+        if self.current_stats:
+            # Update FPS
+            fps = self.current_stats.get('fps', 0.0)
+            self.fps_label.setText(f"{fps:.1f}")
+            
+            # Update progress bars
+            cpu = self.current_stats.get('cpu_percent', 0)
+            memory = self.current_stats.get('memory_percent', 0)
+            gpu = self.current_stats.get('gpu_percent', 0)
+            
+            self.cpu_progress.setValue(int(cpu))
+            self.memory_progress.setValue(int(memory))
+            self.gpu_progress.setValue(int(gpu))
+            
+            # Color code FPS based on performance
+            if fps >= 15:
+                self.fps_label.setStyleSheet("font-weight: bold; color: green;")
+            elif fps >= 10:
+                self.fps_label.setStyleSheet("font-weight: bold; color: orange;")
+            else:
+                self.fps_label.setStyleSheet("font-weight: bold; color: red;")
+    
+    def load_calibration(self):
+        """Load calibration file"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Load Calibration", "", "JSON Files (*.json)"
+        )
+        if file_path:
+            try:
+                import json
+                with open(file_path, 'r') as f:
+                    calib_data = json.load(f)
+                
+                # Update UI with loaded values
+                if 'focal_length' in calib_data:
+                    self.focal_length.setValue(calib_data['focal_length'])
+                if 'cx' in calib_data:
+                    self.cx.setValue(calib_data['cx'])
+                if 'cy' in calib_data:
+                    self.cy.setValue(calib_data['cy'])
+                
+                self.calib_status.setText("Calibration loaded successfully")
+                self.calib_status.setStyleSheet("color: green;")
+                
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to load calibration: {e}")
+    
+    def save_calibration(self):
+        """Save calibration file"""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self, "Save Calibration", "calibration.json", "JSON Files (*.json)"
+        )
+        if file_path:
+            try:
+                import json
+                calib_data = {
+                    'focal_length': self.focal_length.value(),
+                    'cx': self.cx.value(),
+                    'cy': self.cy.value(),
+                    'baseline': self.baseline_input.value(),
+                }
+                
+                with open(file_path, 'w') as f:
+                    json.dump(calib_data, f, indent=2)
+                
+                self.calib_status.setText("Calibration saved successfully")
+                self.calib_status.setStyleSheet("color: green;")
+                
+            except Exception as e:
+                QMessageBox.warning(self, "Error", f"Failed to save calibration: {e}")
+
+def run_gui():
+    """Run the GUI application"""
+    app = QApplication(sys.argv)
+    window = ControlPanelGUI()
+    window.show()
+    return app, window
+
+if __name__ == "__main__":
+    app, window = run_gui()
+    sys.exit(app.exec())
